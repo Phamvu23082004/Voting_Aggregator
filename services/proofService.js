@@ -3,7 +3,7 @@ const path = require("path");
 const { groth16 } = require("snarkjs");
 const { ethers } = require("ethers");
 const dotenv = require("dotenv");
-const { contract1, contract2 } = require("../configs/blockchain");
+const { contract1, contract2, ganacheContract , ganacheContractHash} = require("../configs/blockchain");
 dotenv.config();
 
 const submitProofTally = async () => {
@@ -18,13 +18,13 @@ const submitProofTally = async () => {
 
     // 🧩 2️⃣ Sinh proof bằng snarkjs
     const wasmPath = path.join(__dirname, "../circuits/HashCommitCheck/HashCommitCheck.wasm");
-    const zkeyPath = path.join(__dirname, "../circuits/HashCommitCheck/HashCommitCheck_final.zkey");
+    const zkeyPath = path.join(__dirname, "../circuits/HashCommitCheck/HashCommitCheck.zkey");
 
     const { proof, publicSignals } = await groth16.fullProve(input, wasmPath, zkeyPath);
     console.log("✅ Đã sinh proof thành công");
 
     // 🧩 3️⃣ Verify off-chain (chắc chắn proof hợp lệ)
-    const vKeyPath = path.join(__dirname, "../circuits/HashCommitCheck/verification_key.json");
+    const vKeyPath = path.join(__dirname, "../circuits/HashCommitCheck/HashCommitCheck_key.json");
     const vKey = JSON.parse(fs.readFileSync(vKeyPath, "utf8"));
 
     const verified = await groth16.verify(vKey, publicSignals, proof);
@@ -57,15 +57,18 @@ const submitProofTally = async () => {
     console.log("🧮 Gửi proof on-chain...");
 
     // ⚙️ 5️⃣ Gọi contract.verifyProof() hoặc submitTally()
-    const tx = await contract1.submitProof(a, b, c, inputSignals);
+    // const tx = await contract1.submitProof(a, b, c, inputSignals);
+    console.time("Tx submitProofHash được xác nhận trong");
+    const tx = await ganacheContractHash.submitHashProof(a, b, c, inputSignals);
+
     console.log(`⛓️  Đã gửi tx: ${tx.hash}`);
     const receipt = await tx.wait(); // ⏳ chờ tx được xác nhận trên chain
 
     // console.log("📜 Số block xác nhận:", receipt.confirmations);
-
+    console.timeEnd("Tx submitProofHash được xác nhận trong");
 
      console.log("📦 Bắt đầu publishAllCipherTotals...");
-
+    console.time("Tx publishAllCipherTotals được xác nhận trong");
     const tallyPath = path.join(__dirname, "../tally_result.json");
     const tally = JSON.parse(fs.readFileSync(tallyPath, "utf8"));
 
@@ -81,13 +84,15 @@ const submitProofTally = async () => {
     console.log(`📊 Tổng số ứng viên: ${nCandidates}`);
     console.log("🧮 Đang gửi transaction publishAllCipherTotals...");
 
-    const tx2 = await contract2.publishAllCipherTotals(C1_list, C2_list);
+    // const tx2 = await contract2.publishAllCipherTotals(C1_list, C2_list);
+        const tx2 = await ganacheContract.publishAllCipherTotals(C1_list, C2_list);
     console.log("c1_list",C1_list);
     console.log("c2_list",C2_list);
     console.log(`⛓️  Tx gửi publishAllCipherTotals: ${tx2.hash}`);
 
     const receipt2 = await tx2.wait();
     console.log("✅ Đã publishAllCipherTotals thành công! Gas used:", receipt2.gasUsed.toString());
+    console.timeEnd("Tx publishAllCipherTotals được xác nhận trong");
 
 
   } catch (err) {

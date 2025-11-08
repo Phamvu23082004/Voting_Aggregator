@@ -82,6 +82,7 @@ const processVotes = async (hashOnChain) => {
         BigInt(v.C2y[i]),
       ]);
       acc = poseidon([acc, h]);
+      
     }
 
     const hashCipher = F.toObject(acc).toString();
@@ -89,6 +90,7 @@ const processVotes = async (hashOnChain) => {
       ethers.toBeHex(hashCipher),
       32
     );
+    console.log(` Xử lý phiếu ${v._id} — hashCipher: ${hashCipherBytes32}`);
 
     // So khớp với dữ liệu on-chain
     if (!hashOnChain.has(hashCipherBytes32)) {
@@ -116,7 +118,7 @@ const processVotes = async (hashOnChain) => {
   const hashCipherAll = F.toObject(accCipherAll).toString();
 
   // 🔹 Tính hashAllOnChain (Poseidon toàn bộ hashCipher on-chain, sort để cố định)
-  const sortedHashes = Array.from(hashOnChain).sort();
+  const sortedHashes = Array.from(hashOnChain);
   for (const hStr of sortedHashes) {
     accChainAll = poseidon([accChainAll, BigInt(hStr)]);
   }

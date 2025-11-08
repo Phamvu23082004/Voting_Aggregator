@@ -10,7 +10,9 @@ const { processVotes } = require("./services/tallyService");
 
   await connectDB();
   const hashOnChain = await getAllHashOnChain();
+  console.time("Tổng hợp votes xong trong");
   const { validVotes, nCandidates, C1_total_x, C1_total_y, C2_total_x, C2_total_y } = await processVotes(hashOnChain);
+  console.timeEnd("Tổng hợp votes xong trong");
 
   console.log("📦 Kết quả tổng hợp:");
   console.log("   - Số phiếu hợp lệ:", validVotes);
